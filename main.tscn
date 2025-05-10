@@ -1,0 +1,68 @@
+extends Node2D
+
+const PLAYER_SPEED = 200
+const COIN_SIZE = 20
+const COIN_COUNT = 10
+
+var player
+var coins = []
+var score = 0
+var score_label
+
+func _ready():
+    randomize()
+    setup_player()
+    spawn_coins()
+    setup_ui()
+
+func setup_player():
+    player = ColorRect.new()
+    player.color = Color.LIME
+    player.size = Vector2(40, 40)
+    player.position = get_viewport_rect().size / 2
+    add_child(player)
+
+func setup_ui():
+    score_label = Label.new()
+    score_label.text = "Score: 0"
+    score_label.position = Vector2(10, 10)
+    add_child(score_label)
+
+func spawn_coins():
+    for i in COIN_COUNT:
+        var coin = ColorRect.new()
+        coin.color = Color.YELLOW
+        coin.size = Vector2(COIN_SIZE, COIN_SIZE)
+        coin.position = Vector2(
+            randi() % int(get_viewport_rect().size.x - COIN_SIZE),
+            randi() % int(get_viewport_rect().size.y - COIN_SIZE)
+        )
+        coins.append(coin)
+        add_child(coin)
+
+func _process(delta):
+    handle_input(delta)
+    check_collisions()
+
+func handle_input(delta):
+    var dir = Vector2.ZERO
+    if Input.is_action_pressed("ui_left"):
+        dir.x -= 1
+    if Input.is_action_pressed("ui_right"):
+        dir.x += 1
+    if Input.is_action_pressed("ui_up"):
+        dir.y -= 1
+    if Input.is_action_pressed("ui_down"):
+        dir.y += 1
+    player.position += dir.normalized() * PLAYER_SPEED * delta
+    player.position.x = clamp(player.position.x, 0, get_viewport_rect().size.x - player.size.x)
+    player.position.y = clamp(player.position.y, 0, get_viewport_rect().size.y - player.size.y)
+
+func check_collisions():
+    for coin in coins:
+        if player.get_rect().intersects(coin.get_rect()):
+            coin.queue_free()
+            coins.erase(coin)
+            score += 1
+            score_label.text = "Score: %d" % score
+            break  # Avoid modifying list during iteration
